@@ -2,31 +2,59 @@ package com.raul.people_db.web.controller;
 
 
 import com.raul.people_db.biz.model.Person;
+import com.raul.people_db.data.PersonRepository;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/people")
 public class PeopleController {
 
+    private PersonRepository personRepository;
+
+    public PeopleController(PersonRepository personRepository) {
+        this.personRepository = personRepository;
+    }
+
+    @ModelAttribute("people")
+    public Iterable<Person> getPeople() {
+        return personRepository.findAll();
+    }
+
+    @ModelAttribute
+    public Person getPerson() {
+        return new Person();
+    }
+
     @GetMapping
-    public String getPeople(Model model) {
-        List<Person> people = List.of(
-                new Person(10l, "Jake", "Snake", LocalDate.of(1950, 1, 1), new BigDecimal("50000")),
-                new Person(20l, "Sarah", "Smith", LocalDate.of(1960, 2, 1), new BigDecimal("60000")),
-                new Person(30l, "Johnny", "Jackson", LocalDate.of(1970, 3, 1), new BigDecimal("70000")),
-                new Person(40l, "jerry", "Smith", LocalDate.of(1980, 4, 1), new BigDecimal("80000")),
-                new Person(50l, "Bobby", "McGuire", LocalDate.of(1990, 5, 1), new BigDecimal("90000")),
-                new Person(60l, "Jane", "Smith", LocalDate.of(200, 6, 1), new BigDecimal("100000"))
-        );
-        model.addAttribute("people", people);
+    public String showPeoplePage(Model model) {
         return "people";
+    }
+
+
+    @PostMapping
+    public String savePerson(@Valid Person person, Errors errors) {
+        System.out.println(person);
+        if (!errors.hasErrors()) {
+            personRepository.save(person);
+            return "redirect:people";
+        }
+        return "people";
+    }
+
+    @PostMapping(params = "delete=true")
+    public String deletePeople(@RequestParam Optional<List<Long>> selections) {
+        System.out.println(selections);
+        if (selections.isPresent()) {
+            personRepository.deleteAllById(selections.get());
+        }
+        return "redirect:people";
     }
 
 }
